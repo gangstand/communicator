@@ -1,0 +1,53 @@
+version: "3.9"
+services:
+  postgresql:
+    image: postgres:15.0
+    container_name: postgresql
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+      TZ: Europe/Moscow
+    networks:
+      - web
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+  traefik:
+    image: traefik:latest
+    container_name: traefik
+    restart: unless-stopped
+    networks:
+      - web
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web"
+      - "traefik.http.routers.traefik.service=traefik"
+      - "traefik.http.services.traefik.loadbalancer.server.port=8080"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.localhost`)"
+    command: --api.insecure=true --providers.docker
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web"
+      - "traefik.http.routers.pgadmin.rule=Host(`pgadmin.localhost`)"
+      - "traefik.http.services.pgadmin.loadbalancer.server.port=80"
+    networks:
+      - web
+    restart: unless-stopped
+    depends_on:
+      - traefik
+      - postgresql
+networks:
+  web:
+    external: true

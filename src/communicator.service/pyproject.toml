@@ -1,0 +1,64 @@
+[tool.poetry]
+name = "app"
+version = "0.0.1"
+description = "Communicator"
+authors = ["gangstand <ganggstand@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+pydantic = "^2.5.3"
+alembic = "^1.13.1"
+pydantic-settings = "^2.1.0"
+asyncpg = "^0.29.0"
+sqlalchemy = "^2.0.25"
+python-dotenv = "^1.0.1"
+uvicorn = "^0.27.1"
+pytz = "^2024.1"
+mypy = "^1.8.0"
+litestar = "^2.6.1"
+pyjwt = "2.8.0"
+cryptography = "41.0.7"
+bcrypt = "^4.1.2"
+install = "^1.3.5"
+aiofiles = "^23.2.1"
+websockets = "^12.0"
+aioredis = "^2.0.1"
+setuptools = "^69.1.1"
+
+[tool.poetry.scripts]
+dev_auth = "api.auth:dev"
+dev_main = "api.main:dev"
+dev_static = "api.static:dev"
+dev_message = "api.message:dev"
+
+[tool.poetry.dev-dependencies]
+ruff = "*"
+isort = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+fix = true
+unsafe-fixes = true
+line-length = 120
+lint.select = ["ALL"]
+lint.ignore = ["D1", "D203", "D213", "FA102", "ANN101", "ANN102", "BLE001", "F821", "PLR0913", "C901", "FBT001", "FBT002", "RUF006"]
+cache-dir = "/tmp/ruff-cache/"
+
+[tool.isort]
+line_length = 120
+multi_line_output = 3
+include_trailing_comma = true
+lines_after_imports = 2
+lexicographical = true
+sections = ["FUTURE", "STDLIB", "FIRSTPARTY", "THIRDPARTY", "LOCALFOLDER"]
+no_lines_before = ["STDLIB", "THIRDPARTY"]
+known_third_party = []
+known_local_folder = []
+
+[toal.ruff.isort]
+no-lines-before = ["standard-library", "local-folder"]
+known-third-party = []
+known-local-folder = ["whole_app"]

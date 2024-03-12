@@ -1,0 +1,7 @@
+**/.idea
+**/.fleet
+**/.env
+**/.venv
+**/venv
+**/__pycache__
+src/communicator.service/static

@@ -1,0 +1,140 @@
+x-common_environment: &common_environment
+  DB_HOST: "postgresql"
+  DB_PORT: "5432"
+  DB_NAME: "com"
+  DB_USER: "postgres"
+  DB_PASS: "postgres"
+  SECRET: "SECRET"
+  TZ: "Europe/Moscow"
+  URL_PATH: "http://communicator.localhost/api-static"
+
+version: "3.9"
+services:
+  api-auth:
+    build:
+      context: src/communicator.service
+      dockerfile: Dockerfile
+    command: >
+      sh -c "alembic upgrade head && uvicorn api.auth:app --proxy-headers --workers 3 --loop uvloop --http httptools --host 0.0.0.0 --port 8000"
+    environment:
+      <<: *common_environment
+    networks:
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web"
+      - "traefik.http.routers.api-auth.rule=Host(`communicator.localhost`) && PathPrefix(`/api-auth`)"
+      - "traefik.http.routers.api-auth.entrypoints=http"
+      - "traefik.http.services.api-auth.loadbalancer.server.port=8000"
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:8000/api-auth/v1/system/healthcheck || exit 1
+      interval: 5s
+      retries: 3
+      start_period: 5s
+      timeout: 5s
+  api-main:
+    build:
+      context: src/communicator.service
+      dockerfile: Dockerfile
+    command: >
+      sh -c "alembic upgrade head && uvicorn api.main:app --proxy-headers --workers 3 --loop uvloop --http httptools --host 0.0.0.0 --port 9000"
+    environment:
+      <<: *common_environment
+    networks:
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web"
+      - "traefik.http.routers.api-main.rule=Host(`communicator.localhost`) && PathPrefix(`/api-main`)"
+      - "traefik.http.routers.api-main.entrypoints=http"
+      - "traefik.http.services.api-main.loadbalancer.server.port=9000"
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:9000/api-main/v1/system/healthcheck || exit 1
+      interval: 5s
+      retries: 3
+      start_period: 5s
+      timeout: 1s
+  api-static:
+    build:
+      context: src/communicator.service
+      dockerfile: Dockerfile
+    command: >
+      sh -c "alembic upgrade head && uvicorn api.static:app --proxy-headers --workers 3 --loop uvloop --http httptools --host 0.0.0.0 --port 9001"
+    environment:
+      <<: *common_environment
+    networks:
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web"
+      - "traefik.http.routers.api-static.rule=Host(`communicator.localhost`) && PathPrefix(`/api-static`)"
+      - "traefik.http.routers.api-static.entrypoints=http"
+      - "traefik.http.services.api-static.loadbalancer.server.port=9001"
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:9001/api-static/v1/system/healthcheck || exit 1
+      interval: 5s
+      retries: 3
+      start_period: 5s
+      timeout: 1s
+  api-message:
+    build:
+      context: src/communicator.service
+      dockerfile: Dockerfile
+    command: >
+      sh -c "alembic upgrade head && uvicorn api.message:app --proxy-headers --workers 3 --loop uvloop --http httptools --host 0.0.0.0 --port 9002"
+    environment:
+      <<: *common_environment
+    ports:
+      - "9002:9002"
+    networks:
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web"
+      - "traefik.http.routers.api-message.rule=Host(`communicator.localhost`) && PathPrefix(`/api-message`)"
+      - "traefik.http.routers.api-message.entrypoints=http"
+      - "traefik.http.services.api-message.loadbalancer.server.port=9002"
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:9002/api-message/v1/system/healthcheck || exit 1
+      interval: 5s
+      retries: 3
+      start_period: 5s
+      timeout: 1s
+  docs:
+    image: swaggerapi/swagger-ui
+    environment:
+      URLS: '[{ url: "http://communicator.localhost/api-auth/docs/openapi.json", name: "Microservice API Auth" },
+          { url: "http://communicator.localhost/api-main/docs/openapi.json", name: "Microservice API Main" },
+          { url: "http://communicator.localhost/api-static/docs/openapi.json", name: "Microservice API Static" },
+          { url: "http://communicator.localhost/api-message/docs/openapi.json", name: "Microservice API Message" }]'
+      BASE_URL: /docs
+    depends_on:
+      - api-auth
+      - api-main
+      - api-static
+      - api-message
+    networks:
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web"
+      - "traefik.http.routers.docs.rule=Host(`communicator.localhost`) && PathPrefix(`/docs`)"
+      - "traefik.http.routers.docs.entrypoints=http"
+      - "traefik.http.services.docs.loadbalancer.server.port=8080"
+  client:
+    build:
+      context: src/communicator.client
+      dockerfile: Dockerfile
+    networks:
+      - web
+    depends_on:
+      - docs
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web"
+      - "traefik.http.routers.client.rule=Host(`communicator.localhost`)"
+      - "traefik.http.routers.client.entrypoints=http"
+      - "traefik.http.services.client.loadbalancer.server.port=80"
+networks:
+  web:
+    external: true

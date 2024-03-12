@@ -1,0 +1,8 @@
+**/.venv
+**/docker-compose.yml
+**/Dockerfile
+**/.idea
+**/.env
+**/example.env
+**/.gitlab-ci.yml
+**/.fleet
